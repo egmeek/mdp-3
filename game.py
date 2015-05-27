@@ -31,9 +31,27 @@ class Card(object):
         self.suit = suit
     
     def val(self):
+        '''Returns a string representation of the Card object'''
         return self.rank + self.suit
 
     def rank_num(self):
+        '''Returns a numerical representation of the Card rank'''
         return ranks_numerical[self.rank]
 
 
+class InvalidHand(Exception):
+    pass
+
+
+class Hand(object):
+    '''Hand class containing 2 cards'''
+    def __init__(self, card1, card2):
+        '''Initializes the Hand class with two given card objects'''
+        if card1.rank == card2.rank and card1.suit == card2.suit:
+            raise InvalidHand()
+        self.card1 = card1
+        self.card2 = card2
+
+    def cards(self):
+        '''Returns a tuple containing the two card objects'''
+        return (self.card1, self.card2)
