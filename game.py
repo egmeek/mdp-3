@@ -1,3 +1,6 @@
+import random
+
+
 ranks = ('A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2')
 suits = ('h', 's', 'c', 'd')
 
@@ -29,7 +32,7 @@ class Card(object):
             raise InvalidCard()
         self.rank = rank
         self.suit = suit
-    
+
     def val(self):
         '''Returns a string representation of the Card object'''
         return self.rank + self.suit
@@ -54,4 +57,28 @@ class Hand(object):
 
     def cards(self):
         '''Returns a tuple containing the two card objects'''
-        return (self.card1, self.card2)
+        return self.card1, self.card2
+
+
+class Deck(object):
+    '''Deck object that manages 52 cards'''
+    def __init__(self, decks=1):
+        self.cards = []
+        for i in xrange(decks):
+            for j in xrange(len(ranks)):
+                for k in xrange(len(suits)):
+                    self.cards.append(Card(rank=ranks[j], suit=suits[k]))
+
+    def shuffle(self):
+        '''Shuffles the cards that are currently in the deck'''
+        random.shuffle(self.cards)
+
+    def pop_card(self):
+        '''Returns the card from the end of the deck'''
+        return self.cards.pop()
+
+    def pop_hand(self):
+        '''Returns two cards from the end of the deck'''
+        c1 = self.cards.pop()
+        c2 = self.cards.pop()
+        return c1, c2
