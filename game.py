@@ -82,3 +82,9 @@ class Deck(object):
         c1 = self.cards.pop()
         c2 = self.cards.pop()
         return c1, c2
+
+
+class Player(object):
+    '''Player class used in the game itself'''
+    def __init__(self, name=None):
+        self.name = name if name is not None else 'John Doe'
