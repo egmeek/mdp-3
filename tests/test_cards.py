@@ -20,9 +20,11 @@ class TestCards(unittest.TestCase):
         self.assertEqual('8c', c.val())
 
     def test_rank_num(self):
-        c = Card(rank='K', suit='h')
-        self.assertEqual(13, c.rank_num())
-        c = Card(rank='Q', suit='h')
-        self.assertEqual(12, c.rank_num())
-        c = Card(rank='8', suit='h')
-        self.assertEqual(8, c.rank_num())
+        c1 = Card(rank='K', suit='h')
+        self.assertEqual(13, c1.rank_num())
+        c2 = Card(rank='Q', suit='h')
+        self.assertEqual(12, c2.rank_num())
+        c3 = Card(rank='8', suit='h')
+        self.assertEqual(8, c3.rank_num())
+        self.assertGreater(c1.rank_num(), c2.rank_num())
+        self.assertGreater(c2.rank_num(), c3.rank_num())
