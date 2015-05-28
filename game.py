@@ -20,6 +20,15 @@ ranks_numerical = {
     '2': 2,
 }
 
+player_states = {
+    0: 'WAIT',
+    1: 'CHECK',
+    2: 'CALL',
+    3: 'BET',
+    4: 'RAISE',
+    5: 'ALL-IN',
+}
+
 
 class InvalidCard(Exception):
     pass
@@ -33,7 +42,7 @@ class Card(object):
         self.rank = rank
         self.suit = suit
 
-    def val(self):
+    def __repr__(self):
         '''Returns a string representation of the Card object'''
         return self.rank + self.suit
 
@@ -59,6 +68,9 @@ class Hand(object):
         '''Returns a tuple containing the two card objects'''
         return self.card1, self.card2
 
+    def __repr__(self):
+        return '[%s][%s]' % (self.card1, self.card2)
+
 
 class Deck(object):
     '''Deck object that manages 52 cards'''
@@ -81,10 +93,19 @@ class Deck(object):
         '''Returns two cards from the end of the deck'''
         c1 = self.cards.pop()
         c2 = self.cards.pop()
-        return c1, c2
+        return Hand(c1, c2)
 
 
 class Player(object):
     '''Player class used in the game itself'''
-    def __init__(self, name=None):
+
+    default_bankroll = 1500
+
+    def __init__(self, name=None, hand=None, bankroll=None, state=None):
         self.name = name if name is not None else 'John Doe'
+        self.hand = hand if hand is not None else None
+        if bankroll is None:
+            self.bankroll = self.default_bankroll
+        else:
+            self.bankroll = bankroll
+        self.state = state if state is not None else None
