@@ -55,8 +55,12 @@ class DeterministicPlayer(Player):
             topay = 0
 
         if action in (3, 4):
-            topay += int(self.bankroll * 0.15)
+            topay += int(topay + table.bigblind * 1.5)
 
         self.state = action
+
+        if topay > self.bankroll:
+            topay = self.bankroll
+            action = 5
 
         return action, topay

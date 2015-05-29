@@ -58,6 +58,8 @@ class Table(object):
             player.bankroll -= amt
             self.bets[self.state][player].append(amt)
             self.initiator = player
+        # Some assertions
+        assert player.bankroll >= 0
 
     def next_dealer(self):
         if self.dealer is None:
@@ -142,8 +144,9 @@ class Game(object):
             if player.state not in (5, 6):
                 move, amt = player.move(self.table)
                 self.table.action(move, amt)
-                log('[%s](%s) %s %s' % (
-                    player.name, player.bankroll, player_states[move], amt))
+                log('[%s](%s)(%s%s) %s %s' % (
+                    player.name, player.bankroll, player.hand.card1,
+                    player.hand.card2, player_states[move], amt))
                 if first_after_bb:
                     first_after_bb = False
                     self.table.initiator = player
