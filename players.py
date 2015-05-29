@@ -15,7 +15,7 @@ class DeterministicPlayer(Player):
         if strength >= 20:
             if topay == 0:
                 check[0] = 0.2
-                bet [0]= 0.8
+                bet[0] = 0.8
             else:
                 call[0] = 0.5
                 bet[0] = 0.5
