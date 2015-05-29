@@ -52,15 +52,16 @@ class Table(object):
                 self.bets[state][player] = []
 
     def action(self, code, amt=0):
+        player = self.players[self.current_player]
         if code is 2:
             # Call
-            self.players[self.current_player].bankroll -= amt
+            player.bankroll -= amt
+            self.bets[self.state][player].append(amt)
         elif code in (3, 4, 5):
             # Bet & Raise & All-in
-            self.players[self.current_player].bankroll -= amt
-            player = self.players[self.current_player]
+            player.bankroll -= amt
             self.bets[self.state][player].append(amt)
-            self.initiator = self.players[self.current_player]
+            self.initiator = player
 
     def next_dealer(self):
         if self.dealer is None:
