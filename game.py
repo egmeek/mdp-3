@@ -27,6 +27,7 @@ player_states = {
     3: 'BET',
     4: 'RAISE',
     5: 'ALL-IN',
+    6: 'FOLD',
 }
 
 
@@ -109,3 +110,6 @@ class Player(object):
         else:
             self.bankroll = bankroll
         self.state = state if state is not None else None
+
+    def move(self, table):
+        raise Exception('Not implemented')

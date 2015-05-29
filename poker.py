@@ -1,5 +1,6 @@
 from random import randint
-from game import Card, Hand, Deck, Player
+from game import Card, Hand, Deck, Player, player_states
+from players import DeterministicPlayer
 
 
 DEBUG = True
@@ -10,12 +11,16 @@ def log(msg):
         print msg
 
 
-states = {
-    0: 'Pre-Flop',
-    1: 'Flop',
-    2: 'Turn',
-    3: 'River',
+game_states = {
+    0: 'PREFLOP',
+    1: 'FLOP',
+    2: 'TURN',
+    3: 'RIVER',
 }
+
+
+class Bets(object):
+    pass
 
 
 class Table(object):
@@ -25,19 +30,37 @@ class Table(object):
     When a player needs to make a decision, the Player object receives an
     instance of the Table class that contains all the necessary information
     to make one.
+
+    bets = {0: {player1: [100, 200], player2: [100, 200, 400] ...
     '''
     default_bb = 100
 
     def __init__(self, players, deck=None, bigblind=None):
         self.deck = deck if deck is not None else Deck()
         self.bigblind = bigblind if bigblind is not None else self.default_bb
-        self.game_state = 0
+        self.state = 0
         self.dealer = None
         self.players = players
         self.current_player = None
         self.nr_players = len(players)
         self.dealer = randint(0, self.nr_players - 1)
         self.initiator = None
+        self.bets = {}
+        for state in game_states:
+            self.bets[state] = {}
+            for player in self.players:
+                self.bets[state][player] = []
+
+    def action(self, code, amt=0):
+        if code is 2:
+            # Call
+            self.players[self.current_player].bankroll -= amt
+        elif code in (3, 4, 5):
+            # Bet & Raise & All-in
+            self.players[self.current_player].bankroll -= amt
+            player = self.players[self.current_player]
+            self.bets[self.state][player].append(amt)
+            self.initiator = self.players[self.current_player]
 
     def next_dealer(self):
         if self.dealer is None:
@@ -68,14 +91,14 @@ class Game(object):
 
     def small_blind(self):
         player = self.table.next_player()
-        player.bankroll -= (self.table.bigblind / 2)
-        log('Player %s is the small blind. (%s)' %
+        self.table.action(3, self.table.bigblind / 2)
+        log('[%s](%s) SMALL BLIND' %
             (player.name, player.bankroll))
 
     def big_blind(self):
         player = self.table.next_player()
-        player.bankroll -= self.table.bigblind
-        log('Player %s is the big blind. (%s)' %
+        self.table.action(3, self.table.bigblind)
+        log('[%s](%s) BIG BLIND' %
             (player.name, player.bankroll))
         self.table.initiator = player
 
@@ -92,6 +115,7 @@ class Game(object):
             nr_round += 1
 
     def pre_flop(self):
+        log('-' * 10 + ' Preflop ' + '-' * 10)
         # Prepare the deck
         deck = self.table.deck
         deck.shuffle()
@@ -106,17 +130,21 @@ class Game(object):
         self.big_blind()
         player = self.table.next_player()
         while self.table.initiator is not player:
-            log('To move: %s' % player.name)
-            move, amt = player.move(self.table)
+            if player.state not in (5, 6):
+                move, amt = player.move(self.table)
+                self.table.action(move, amt)
+                log('[%s](%s) %s %s' % (
+                    player.name, player.bankroll, player_states[move], amt))
             player = self.table.next_player()
 
 
 def main():
     deck = Deck()
-    p1 = Player(name='A', bankroll=1500)
-    p2 = Player(name='B', bankroll=1500)
-    p3 = Player(name='C', bankroll=1500)
-    table = Table([p1, p2, p3], deck=deck, bigblind=100)
+    p1 = DeterministicPlayer(name='A', bankroll=1500)
+    p2 = DeterministicPlayer(name='B', bankroll=1500)
+    p3 = DeterministicPlayer(name='C', bankroll=1500)
+    p4 = DeterministicPlayer(name='D', bankroll=1500)
+    table = Table([p1, p2, p3, p4], deck=deck, bigblind=100)
     g = Game(table)
     g.play(rounds=1)
 
