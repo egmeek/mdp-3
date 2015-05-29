@@ -19,10 +19,6 @@ game_states = {
 }
 
 
-class Bets(object):
-    pass
-
-
 class Table(object):
     '''
     Class responsable for the information available to all players. What
@@ -80,6 +76,17 @@ class Table(object):
             self.current_player = (self.current_player + 1) % self.nr_players
         return self.current_player
 
+    def to_pay(self, player):
+        payed = sum(self.bets[self.state][player])
+        topay = 0
+        for state in self.bets:
+            for p in self.bets[state]:
+                if p is not player:
+                    summ = sum(self.bets[self.state][p])
+                    topay = max(summ, topay)
+        topay = topay - payed
+        return topay
+
 
 class Game(object):
     '''
@@ -130,12 +137,16 @@ class Game(object):
         self.small_blind()
         self.big_blind()
         player = self.table.next_player()
+        first_after_bb = True
         while self.table.initiator is not player:
             if player.state not in (5, 6):
                 move, amt = player.move(self.table)
                 self.table.action(move, amt)
                 log('[%s](%s) %s %s' % (
                     player.name, player.bankroll, player_states[move], amt))
+                if first_after_bb:
+                    first_after_bb = False
+                    self.table.initiator = player
             player = self.table.next_player()
 
 

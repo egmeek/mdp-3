@@ -6,14 +6,7 @@ class DeterministicPlayer(Player):
     def move(self, table):
         state = table.state
         bets = table.bets[state]
-        payed = sum(table.bets[state][self])
-        topay = 0
-        for state in table.bets:
-            for player in table.bets[state]:
-                if player is not self:
-                    summ = sum(table.bets[state][player])
-                    topay = max(summ, topay)
-        topay = topay - payed
+        topay = table.to_pay(self)
         strength = sum([c.rank_num() for c in self.hand.cards()])
         fold = [0, 6]
         check = [0, 1]
