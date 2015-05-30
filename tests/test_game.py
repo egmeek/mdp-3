@@ -150,3 +150,26 @@ class TestGame(unittest.TestCase):
         self.assertEqual(p1.bankroll, 900)
         self.assertEqual(p2.bankroll, 900)
         self.assertEqual(p3.bankroll, 2700)
+
+    def test_2_player_preflop_allin_folds(self):
+        d = Deck()
+        h1 = d.pop_hand()
+        h2 = d.pop_hand()
+        h3 = d.pop_hand()
+
+        seq = deque([(5, 1500), (5, 1450), (6, 0)])
+
+        p1 = SequencePlayer('A', 1500, h1, seq)
+        p2 = SequencePlayer('B', 1500, h2, seq)
+        p3 = SequencePlayer('B', 1500, h2, seq)
+
+        t = Table([p1, p2, p3], bigblind=100, deck=d)
+        t.dealer = 0
+
+        g = Game(t)
+        g.play()
+
+        self.assertEqual(t.state, 4)
+        self.assertEqual(p1.bankroll, 0)
+        self.assertEqual(p2.bankroll, 0)
+        self.assertEqual(p3.bankroll, 1400)
