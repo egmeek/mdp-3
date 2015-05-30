@@ -131,7 +131,10 @@ class Game(object):
         no more players are required to make an action.
         '''
         player = self.table.next_player()
+        self.table.initiator = Player(name='None')
         first_after_bb = True
+        log('initiator: %s, player: %s' % (
+            self.table.initiator.name, player.name))
         while self.table.initiator is not player:
             if player.state not in (5, 6):
                 move, amt = player.move(self.table)
@@ -142,23 +145,24 @@ class Game(object):
                 if first_after_bb:
                     first_after_bb = False
                     self.table.initiator = player
+            log('initiator: %s' % self.table.initiator.name)
             player = self.table.next_player()
 
     def river(self):
         log('-' * 10 + ' River ' + '-' * 10)
-        self.state = 2
+        self.table.state = 3
         self.table.current_player = self.table.dealer
         self.collect_bets()
 
     def turn(self):
         log('-' * 10 + ' Turn ' + '-' * 10)
-        self.state = 2
+        self.table.state = 2
         self.table.current_player = self.table.dealer
         self.collect_bets()
 
     def flop(self):
         log('-' * 10 + ' Flop ' + '-' * 10)
-        self.state = 1
+        self.table.state = 1
         self.table.current_player = self.table.dealer
         self.collect_bets()
 
