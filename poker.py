@@ -42,6 +42,8 @@ class Table(object):
         self.dealer = randint(0, self.nr_players - 1)
         self.initiator = None
         self.bets = {}
+        self.players_fold = 0
+        self.players_allin = 0
         for state in game_states:
             self.bets[state] = {}
             for player in self.players:
@@ -53,11 +55,21 @@ class Table(object):
             # Call
             player.bankroll -= amt
             self.bets[self.state][player].append(amt)
-        elif code in (3, 4, 5):
-            # Bet & Raise & All-in
+        elif code in (3, 4):
+            # Bet & Raise
             player.bankroll -= amt
             self.bets[self.state][player].append(amt)
             self.initiator = player
+        elif code is 5:
+            # All-in
+            player.bankroll -= amt
+            self.bets[self.state][player].append(amt)
+            self.initiator = player
+            self.players_allin += 1
+        elif code is 6:
+            # Fold
+            self.players_fold += 1
+
         # Some assertions
         assert player.bankroll >= 0
 
@@ -90,6 +102,11 @@ class Table(object):
         log('%s, %s' % (topay, payed))
         return topay
 
+    def players_active(self):
+        return self.nr_players - (self.players_fold + self.players_allin)
+
+    def players_in_hand(self):
+        return self.nr_players - self.players_fold
 
 class Game(object):
     '''
@@ -113,23 +130,29 @@ class Game(object):
             (player.name, player.bankroll))
         self.table.initiator = player
 
+    def distribute_winnings(self):
+        pass
+
     def play(self, rounds=1):
         nr_round = 0
         while nr_round < rounds:
             self.pre_flop()
-            self.flop()
-            self.turn()
-            self.river()
+            for state in (1, 2, 3):
+                if self.table.players_in_hand() >= 2:
+                    self.game_state(state)
             '''
             self.showdown()
             '''
             nr_round += 1
+        self.distribute_winnings()
 
     def collect_bets(self):
         '''
         Function that takes care of the betting in the current state until
         no more players are required to make an action.
         '''
+        if self.table.players_active() < 2:
+            return
         player = self.table.next_player()
         self.table.initiator = Player(name='None')
         first_after_bb = True
@@ -148,21 +171,10 @@ class Game(object):
             log('initiator: %s' % self.table.initiator.name)
             player = self.table.next_player()
 
-    def river(self):
-        log('-' * 10 + ' River ' + '-' * 10)
-        self.table.state = 3
-        self.table.current_player = self.table.dealer
-        self.collect_bets()
-
-    def turn(self):
-        log('-' * 10 + ' Turn ' + '-' * 10)
-        self.table.state = 2
-        self.table.current_player = self.table.dealer
-        self.collect_bets()
-
-    def flop(self):
-        log('-' * 10 + ' Flop ' + '-' * 10)
-        self.table.state = 1
+    def game_state(self, state):
+        log('---------- %s ----------' % game_states[state])
+        ''' Does the work in the 'flop', 'turn' and 'river' states'''
+        self.table.state = state
         self.table.current_player = self.table.dealer
         self.collect_bets()
 
