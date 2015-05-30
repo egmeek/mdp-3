@@ -43,6 +43,7 @@ class Table(object):
         self.bets = {}
         self.players_fold = 0
         self.players_allin = 0
+        self.family_cards = []
         for state in [k for k in game_states.keys() if k != 4]:
             self.bets[state] = {}
             for player in self.players:
@@ -193,7 +194,14 @@ class Game(object):
             pass
 
     def game_state(self, state):
-        log('---------- %s ----------' % game_states[state])
+        self.table.deck.pop_card()
+        cards = []
+        nr_cards = 3 if state is 1 else 1
+        for _ in xrange(nr_cards):
+            self.table.family_cards.append(self.table.deck.pop_card())
+        log('---------- %s: %s ----------' %
+            (game_states[state],
+             ' '.join([repr(c) for c in self.table.family_cards])))
         ''' Does the work in the 'flop', 'turn' and 'river' states'''
         self.table.state = state
         self.table.current_player = self.table.dealer
