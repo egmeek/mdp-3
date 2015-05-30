@@ -188,8 +188,9 @@ class Game(object):
         log('Dealer: %s' % self.table.players[self.table.dealer].name)
         # Distribute starting hands
         for player in self.table.players:
-            hand = deck.pop_hand()
-            player.hand = hand
+            if player.hand is None:
+                hand = deck.pop_hand()
+                player.hand = hand
         # Pre-Flop action
         self.small_blind()
         self.big_blind()
