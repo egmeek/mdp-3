@@ -87,6 +87,7 @@ class Table(object):
                     summ = sum(self.bets[self.state][p])
                     topay = max(summ, topay)
         topay = topay - payed
+        log('%s, %s' % (topay, payed))
         return topay
 
 
@@ -116,13 +117,50 @@ class Game(object):
         nr_round = 0
         while nr_round < rounds:
             self.pre_flop()
-            '''
             self.flop()
             self.turn()
             self.river()
+            '''
             self.showdown()
             '''
             nr_round += 1
+
+    def collect_bets(self):
+        '''
+        Function that takes care of the betting in the current state until
+        no more players are required to make an action.
+        '''
+        player = self.table.next_player()
+        first_after_bb = True
+        while self.table.initiator is not player:
+            if player.state not in (5, 6):
+                move, amt = player.move(self.table)
+                self.table.action(move, amt)
+                log('[%s](%s)(%s%s) %s %s' % (
+                    player.name, player.bankroll, player.hand.card1,
+                    player.hand.card2, player_states[move], amt))
+                if first_after_bb:
+                    first_after_bb = False
+                    self.table.initiator = player
+            player = self.table.next_player()
+
+    def river(self):
+        log('-' * 10 + ' River ' + '-' * 10)
+        self.state = 2
+        self.table.current_player = self.table.dealer
+        self.collect_bets()
+
+    def turn(self):
+        log('-' * 10 + ' Turn ' + '-' * 10)
+        self.state = 2
+        self.table.current_player = self.table.dealer
+        self.collect_bets()
+
+    def flop(self):
+        log('-' * 10 + ' Flop ' + '-' * 10)
+        self.state = 1
+        self.table.current_player = self.table.dealer
+        self.collect_bets()
 
     def pre_flop(self):
         log('-' * 10 + ' Preflop ' + '-' * 10)
@@ -138,19 +176,7 @@ class Game(object):
         # Pre-Flop action
         self.small_blind()
         self.big_blind()
-        player = self.table.next_player()
-        first_after_bb = True
-        while self.table.initiator is not player:
-            if player.state not in (5, 6):
-                move, amt = player.move(self.table)
-                self.table.action(move, amt)
-                log('[%s](%s)(%s%s) %s %s' % (
-                    player.name, player.bankroll, player.hand.card1,
-                    player.hand.card2, player_states[move], amt))
-                if first_after_bb:
-                    first_after_bb = False
-                    self.table.initiator = player
-            player = self.table.next_player()
+        self.collect_bets()
 
 
 def main():
