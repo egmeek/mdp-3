@@ -1,13 +1,11 @@
+from os import environ
 from random import randint
 from game import Card, Hand, Deck, Player, player_states
 from players import DeterministicPlayer
 
 
-DEBUG = True
-
-
 def log(msg):
-    if DEBUG:
+    if environ.get('DEBUG'):
         print msg
 
 
@@ -66,11 +64,11 @@ class Table(object):
             self.bets[self.state][player].append(amt)
             self.initiator = player
             self.players_allin += 1
+            assert player.bankroll == 0
         elif code is 6:
             # Fold
             self.players_fold += 1
 
-        # Some assertions
         assert player.bankroll >= 0
 
     def next_dealer(self):
@@ -78,6 +76,7 @@ class Table(object):
             self.dealer = randint(0, self.nr_players - 1)
         else:
             self.dealer = (self.dealer + 1) % self.nr_players
+        return self.dealer
 
     def next_player(self):
         pid = self.next_player_id()
@@ -99,6 +98,7 @@ class Table(object):
                     summ = sum(self.bets[self.state][p])
                     topay = max(summ, topay)
         topay = topay - payed
+        topay = max(topay, 0)
         log('%s, %s' % (topay, payed))
         return topay
 

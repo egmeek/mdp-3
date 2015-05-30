@@ -98,7 +98,7 @@ class Deck(object):
 
 
 class Player(object):
-    '''Player class used in the game itself'''
+    '''Player base class used in the game itself'''
 
     default_bankroll = 1500
 
