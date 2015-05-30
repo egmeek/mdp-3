@@ -15,9 +15,9 @@ class TestCards(unittest.TestCase):
 
     def test_val(self):
         c = Card(rank='A', suit='h')
-        self.assertEqual('Ah', c.val())
+        self.assertEqual('Ah', repr(c))
         c = Card(rank='8', suit='c')
-        self.assertEqual('8c', c.val())
+        self.assertEqual('8c', repr(c))
 
     def test_rank_num(self):
         c1 = Card(rank='K', suit='h')
