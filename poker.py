@@ -108,6 +108,7 @@ class Table(object):
     def players_in_hand(self):
         return self.nr_players - self.players_fold
 
+
 class Game(object):
     '''
     Main class responsable for managing the state of a round, managing
