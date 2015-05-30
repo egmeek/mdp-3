@@ -14,6 +14,11 @@ class SequencePlayer(Player):
 
 
 class TestGame(unittest.TestCase):
+    def setUp(self):
+        import os
+        if 'DEBUG' in os.environ:
+            del os.environ['DEBUG']
+
     def test_2_player_quick_folds(self):
         d = Deck()
         h1 = d.pop_hand()
@@ -132,7 +137,8 @@ class TestGame(unittest.TestCase):
         h2 = d.pop_hand()
         h3 = d.pop_hand()
 
-        seq = deque([(2, 100), (2, 50), (1, 0), (3, 100), (4, 200), (4, 300),
+        seq = deque([
+            (2, 100), (2, 50), (1, 0), (3, 100), (4, 200), (4, 300),
             (4, 400), (2, 300), (2, 200), (1, 0), (1, 0), (1, 0), (6, 0),
             (3, 100), (6, 0)])
 
@@ -151,8 +157,9 @@ class TestGame(unittest.TestCase):
         self.assertEqual(p2.bankroll, 900)
         self.assertEqual(p3.bankroll, 2700)
 
-    def test_2_player_preflop_allin_folds(self):
+    def test_3_player_preflop_allin_folds(self):
         d = Deck()
+        d.shuffle()
         h1 = d.pop_hand()
         h2 = d.pop_hand()
         h3 = d.pop_hand()
@@ -161,7 +168,7 @@ class TestGame(unittest.TestCase):
 
         p1 = SequencePlayer('A', 1500, h1, seq)
         p2 = SequencePlayer('B', 1500, h2, seq)
-        p3 = SequencePlayer('B', 1500, h2, seq)
+        p3 = SequencePlayer('C', 1500, h3, seq)
 
         t = Table([p1, p2, p3], bigblind=100, deck=d)
         t.dealer = 0
@@ -170,6 +177,30 @@ class TestGame(unittest.TestCase):
         g.play()
 
         self.assertEqual(t.state, 4)
-        self.assertEqual(p1.bankroll, 0)
-        self.assertEqual(p2.bankroll, 0)
-        self.assertEqual(p3.bankroll, 1400)
+        self.assertEqual(p1.bankroll + p2.bankroll, 3100)
+
+    def test_3_player_showdown1(self):
+        d = Deck()
+        d.shuffle()
+        h1 = d.pop_hand()
+        h2 = d.pop_hand()
+        h3 = d.pop_hand()
+
+        seq = deque([
+            (2, 100), (2, 50), (1, 0), (3, 100), (4, 200), (4, 300),
+            (4, 400), (2, 300), (2, 200), (1, 0), (1, 0), (1, 0), (6, 0),
+            (3, 100), (2, 100)])
+
+        p1 = SequencePlayer('A', 1500, h1, seq)
+        p2 = SequencePlayer('B', 1500, h2, seq)
+        p3 = SequencePlayer('C', 1500, h3, seq)
+
+        t = Table([p1, p2, p3], bigblind=100, deck=d)
+        t.dealer = 0
+
+        g = Game(t)
+        g.play()
+
+        self.assertEqual(t.state, 4)
+        self.assertEqual(p1.bankroll + p3.bankroll - 3000, 600)
+        self.assertEqual(p2.bankroll, 900)

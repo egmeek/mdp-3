@@ -2,6 +2,7 @@ from os import environ
 from random import randint
 from game import Card, Hand, Deck, Player, player_states
 from players import DeterministicPlayer
+from deuces.deuces import Card as DCard, Evaluator
 
 
 def log(msg):
@@ -191,7 +192,35 @@ class Game(object):
             winner.bankroll += winnings
         else:
             # A so called 'showdown'
-            pass
+            e = Evaluator()
+            dboard = []
+            for card in self.table.family_cards:
+                dboard.append(DCard.new(repr(card)))
+            vals = {}
+            for p in self.table.players:
+                vals[p] = [0, 0]
+            for p in self.table.players:
+                for s in self.table.bets:
+                    vals[p][0] += sum(self.table.bets[s][p])
+                hand = [
+                    DCard.new(repr(p.hand.cards()[0])),
+                    DCard.new(repr(p.hand.cards()[1])),
+                ]
+                vals[p][1] = e.evaluate(dboard, hand) if p.state != 6 else 0
+
+            to_distribute = sum([v[0] for v in vals.values()])
+            best_card_score = max([v[1] for v in vals.values()])
+            winners = [
+                p
+                for p, v in vals.iteritems()
+                if v[1] == best_card_score
+            ]
+            for p, v in vals.iteritems():
+                if p in winners:
+                    p.bankroll += v[0]
+                else:
+                    for w in winners:
+                        w.bankroll += int(v[0]/len(winners))
 
     def game_state(self, state):
         self.table.deck.pop_card()
