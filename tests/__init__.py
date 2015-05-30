@@ -4,4 +4,3 @@ from test_deck import *
 from test_player import *
 from test_table import *
 from test_game import *
-from test_evaluator import *
