@@ -116,7 +116,6 @@ class Game(object):
     Main class responsable for managing the state of a round, managing
     players, the deck, winners, the pot etc...
     '''
-
     def __init__(self, table):
         self.table = table
 
@@ -158,7 +157,8 @@ class Game(object):
         first_after_bb = True
         log('initiator: %s, player: %s' % (
             self.table.initiator.name, player.name))
-        while self.table.initiator is not player and self.table.players_in_hand() >= 2:
+        while (self.table.initiator is not player and
+               self.table.players_in_hand() >= 2):
             if player.state not in (5, 6):
                 move, amt = player.move(self.table)
                 self.table.action(move, amt)
@@ -230,4 +230,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
