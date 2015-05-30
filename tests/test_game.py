@@ -1,44 +1,16 @@
 import unittest
+from collections import deque
 from game import Player, Card, Hand, Deck
 from poker import Table, Game
 
 
 class SequencePlayer(Player):
-    def __init__(self, name, br, hand):
+    def __init__(self, name, br, hand, seq):
         super(SequencePlayer, self).__init__(name=name, bankroll=br, hand=hand)
-        self.it = 0
+        self.seq = seq
 
     def move(self, table):
-        m, amt = self.moves(self.it)
-        self.it += 1
-        return m, amt
-
-
-class SequencePlayerA(SequencePlayer):
-    def moves(self, it):
-        seq = {
-            0: (6, 0),
-            1: (6, 0),
-        }
-        return seq[it]
-
-
-class SequencePlayerB(SequencePlayer):
-    def moves(self, it):
-        seq = {
-            0: (6, 0),
-            1: (6, 0),
-        }
-        return seq[it]
-
-
-class SequencePlayerC(SequencePlayer):
-    def moves(self, it):
-        seq = {
-            0: (6, 0),
-            1: (6, 0),
-        }
-        return seq[it]
+        return self.seq.popleft()
 
 
 class TestGame(unittest.TestCase):
@@ -46,14 +18,135 @@ class TestGame(unittest.TestCase):
         d = Deck()
         h1 = d.pop_hand()
         h2 = d.pop_hand()
+
+        seq = deque([(6, 0), (6, 0)])
+
+        p1 = SequencePlayer('A', 1500, h1, seq)
+        p2 = SequencePlayer('B', 1500, h2, seq)
+
+        t = Table([p1, p2], bigblind=2, deck=d)
+        t.dealer = 1
+
+        g = Game(t)
+        g.play()
+
+        self.assertEqual(t.state, 0)
+        self.assertEqual(p1.bankroll, 1499)
+        self.assertEqual(p2.bankroll, 1501)
+
+    def test_3_player_quick_folds(self):
+        d = Deck()
+        h1 = d.pop_hand()
+        h2 = d.pop_hand()
         h3 = d.pop_hand()
 
-        p1 = SequencePlayerA('A', 1500, h1)
-        p2 = SequencePlayerB('B', 1500, h2)
-        p3 = SequencePlayerC('C', 1500, h3)
+        seq = deque([(6, 0), (6, 0), (6, 0)])
 
-        t = Table([p1, p2, p3], bigblind=1, deck=d)
+        p1 = SequencePlayer('A', 1500, h1, seq)
+        p2 = SequencePlayer('B', 1500, h2, seq)
+        p3 = SequencePlayer('C', 1500, h3, seq)
+
+        t = Table([p1, p2, p3], bigblind=2, deck=d)
         t.dealer = 0
         g = Game(t)
 
         g.play()
+
+        self.assertEqual(t.state, 0)
+        self.assertEqual(p1.bankroll, 1500)
+        self.assertEqual(p2.bankroll, 1499)
+        self.assertEqual(p3.bankroll, 1501)
+
+    def test_3_player_quick_bets_folds(self):
+        d = Deck()
+        h1 = d.pop_hand()
+        h2 = d.pop_hand()
+        h3 = d.pop_hand()
+
+        seq = deque([(2, 100), (3, 200), (4, 300), (6, 0), (6, 0), (6, 0)])
+
+        p1 = SequencePlayer('A', 1500, h1, seq)
+        p2 = SequencePlayer('B', 1500, h2, seq)
+        p3 = SequencePlayer('C', 1500, h3, seq)
+
+        t = Table([p1, p2, p3], bigblind=100, deck=d)
+        t.dealer = 0
+        g = Game(t)
+
+        g.play()
+
+        self.assertEqual(t.state, 0)
+        self.assertEqual(p1.bankroll, 1400)
+        self.assertEqual(p2.bankroll, 1250)
+        self.assertEqual(p3.bankroll, 1850)
+
+    def test_3_player_long_preflop_bets_folds(self):
+        d = Deck()
+        h1 = d.pop_hand()
+        h2 = d.pop_hand()
+        h3 = d.pop_hand()
+
+        seq = deque([
+            (2, 100), (2, 50), (3, 100), (2, 100), (4, 200),
+            (2, 100), (2, 100), (6, 0), (6, 0), (6, 0)])
+
+        p1 = SequencePlayer('A', 1500, h1, seq)
+        p2 = SequencePlayer('B', 1500, h2, seq)
+        p3 = SequencePlayer('C', 1500, h3, seq)
+
+        t = Table([p1, p2, p3], bigblind=100, deck=d)
+        t.dealer = 2
+
+        g = Game(t)
+        g.play()
+
+        self.assertEqual(t.state, 1)
+        self.assertEqual(p1.bankroll, 1200)
+        self.assertEqual(p2.bankroll, 1200)
+        self.assertEqual(p3.bankroll, 2100)
+
+    def test_2_player_long_turn_bets_folds(self):
+        d = Deck()
+        h1 = d.pop_hand()
+        h2 = d.pop_hand()
+        h3 = d.pop_hand()
+
+        seq = deque([(3, 200), (2, 150), (3, 100), (4, 200), (2, 100), (6, 0)])
+
+        p1 = SequencePlayer('A', 1500, h1, seq)
+        p2 = SequencePlayer('B', 1500, h2, seq)
+
+        t = Table([p1, p2], bigblind=100, deck=d)
+        t.dealer = 0
+
+        g = Game(t)
+        g.play()
+
+        self.assertEqual(t.state, 2)
+        self.assertEqual(p1.bankroll, 1950)
+        self.assertEqual(p2.bankroll, 1050)
+
+    def test_2_player_long_river_bets_folds(self):
+        d = Deck()
+        h1 = d.pop_hand()
+        h2 = d.pop_hand()
+        h3 = d.pop_hand()
+
+        seq = deque([(2, 100), (2, 50), (1, 0), (3, 100), (4, 200), (4, 300),
+            (4, 400), (2, 300), (2, 200), (1, 0), (1, 0), (1, 0), (6, 0),
+            (3, 100), (6, 0)])
+
+        p1 = SequencePlayer('A', 1500, h1, seq)
+        p2 = SequencePlayer('B', 1500, h2, seq)
+        p3 = SequencePlayer('B', 1500, h2, seq)
+
+        t = Table([p1, p2, p3], bigblind=100, deck=d)
+        t.dealer = 0
+
+        g = Game(t)
+        g.play()
+
+        self.assertEqual(t.state, 3)
+        self.assertEqual(p1.bankroll, 900)
+        self.assertEqual(p2.bankroll, 900)
+        self.assertEqual(p3.bankroll, 2700)

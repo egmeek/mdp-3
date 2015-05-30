@@ -14,6 +14,7 @@ game_states = {
     1: 'FLOP',
     2: 'TURN',
     3: 'RIVER',
+    4: 'SHOWDOWN',
 }
 
 
@@ -42,7 +43,7 @@ class Table(object):
         self.bets = {}
         self.players_fold = 0
         self.players_allin = 0
-        for state in game_states:
+        for state in [k for k in game_states.keys() if k != 4]:
             self.bets[state] = {}
             for player in self.players:
                 self.bets[state][player] = []
@@ -68,6 +69,7 @@ class Table(object):
         elif code is 6:
             # Fold
             self.players_fold += 1
+        player.state = code
 
         assert player.bankroll >= 0
 
@@ -131,23 +133,20 @@ class Game(object):
             (player.name, player.bankroll))
         self.table.initiator = player
 
-    def distribute_winnings(self):
-        pass
-
     def play(self, rounds=1):
         nr_round = 0
+        self.table.state = 0
         while nr_round < rounds:
             self.pre_flop()
             for state in (1, 2, 3):
                 if self.table.players_in_hand() >= 2:
                     self.game_state(state)
-            '''
-            self.showdown()
-            '''
             nr_round += 1
-        self.distribute_winnings()
+            if self.table.players_in_hand() >= 2:
+                self.table.state = 4
+        self.manage_winnings()
 
-    def collect_bets(self):
+    def manage_bets(self):
         '''
         Function that takes care of the betting in the current state until
         no more players are required to make an action.
@@ -159,7 +158,7 @@ class Game(object):
         first_after_bb = True
         log('initiator: %s, player: %s' % (
             self.table.initiator.name, player.name))
-        while self.table.initiator is not player:
+        while self.table.initiator is not player and self.table.players_in_hand() >= 2:
             if player.state not in (5, 6):
                 move, amt = player.move(self.table)
                 self.table.action(move, amt)
@@ -172,12 +171,33 @@ class Game(object):
             log('initiator: %s' % self.table.initiator.name)
             player = self.table.next_player()
 
+    def manage_winnings(self):
+        '''
+        Function that checks who the winners are and distributes the pot
+        acordingly.
+        '''
+        if self.table.state < 4:
+            # A single player remained, the rest have folded
+            # Go through each bet, if they dont belong to the un-folded player,
+            # add them upp so we can transfer them to the winner.
+            winnings = 0
+            winner = None
+            for player in self.table.bets[self.table.state]:
+                for state in xrange(self.table.state + 1):
+                    winnings += sum(self.table.bets[state][player])
+                if player.state != 6:
+                    winner = player
+            winner.bankroll += winnings
+        else:
+            # A so called 'showdown'
+            pass
+
     def game_state(self, state):
         log('---------- %s ----------' % game_states[state])
         ''' Does the work in the 'flop', 'turn' and 'river' states'''
         self.table.state = state
         self.table.current_player = self.table.dealer
-        self.collect_bets()
+        self.manage_bets()
 
     def pre_flop(self):
         log('-' * 10 + ' Preflop ' + '-' * 10)
@@ -194,7 +214,7 @@ class Game(object):
         # Pre-Flop action
         self.small_blind()
         self.big_blind()
-        self.collect_bets()
+        self.manage_bets()
 
 
 def main():

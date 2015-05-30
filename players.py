@@ -64,6 +64,4 @@ class DeterministicPlayer(Player):
             topay = self.bankroll
             action = 5
 
-        self.state = action
-
         return action, topay
