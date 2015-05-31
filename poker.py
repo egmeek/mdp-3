@@ -19,6 +19,22 @@ game_states = {
 }
 
 
+class DeucesWrapper(object):
+    def __init__(self):
+        self.e = Evaluator()
+
+    def evaluate(board, hand):
+        dhand = []
+        dboard = []
+        for c in board:
+            dcard = DCard(repr(c))
+            dboard.append(dcard)
+        for c in hand:
+            dcard = DCard(repr(c))
+            dhand.append(dcard)
+        return self.e.evaluate(dboard, dhand)
+
+
 class Table(object):
     '''
     Class responsable for the information available to all players. What
@@ -125,6 +141,7 @@ class Game(object):
     '''
     def __init__(self, table):
         self.table = table
+        self.nr_round = 0
 
     def small_blind(self):
         player = self.table.next_player()
@@ -140,15 +157,14 @@ class Game(object):
         self.table.initiator = player
 
     def play(self, rounds=1):
-        nr_round = 0
         self.current_player = None
-        while nr_round < rounds:
+        while self.nr_round < rounds:
             self.table.reset()
             self.pre_flop()
             for state in (1, 2, 3):
                 if self.table.players_in_hand() >= 2:
                     self.game_state(state)
-            nr_round += 1
+            self.nr_round += 1
             if self.table.players_in_hand() >= 2:
                 self.table.state = 4
             self.manage_winnings()
@@ -168,7 +184,7 @@ class Game(object):
         while (self.table.initiator is not player and
                self.table.players_in_hand() >= 2):
             if player.state not in (5, 6):
-                move, amt = player.move(self.table)
+                move, amt = player.move(self.table, nr_round=self.nr_round)
                 self.table.action(move, amt)
                 log('[%s](%s)(%s%s) %s %s' % (
                     player.name, player.bankroll, player.hand.card1,

@@ -3,7 +3,7 @@ from game import Player
 
 
 class DeterministicPlayer(Player):
-    def move(self, table):
+    def move(self, table, nr_round=None):
         state = table.state
         bets = table.bets[state]
         topay = table.to_pay(self)

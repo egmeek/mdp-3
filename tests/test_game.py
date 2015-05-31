@@ -9,7 +9,7 @@ class SequencePlayer(Player):
         super(SequencePlayer, self).__init__(name=name, bankroll=br, hand=hand)
         self.seq = seq
 
-    def move(self, table):
+    def move(self, table, nr_round=None):
         return self.seq.popleft()
 
 

@@ -111,5 +111,5 @@ class Player(object):
             self.bankroll = bankroll
         self.state = state if state is not None else None
 
-    def move(self, table):
+    def move(self, table, nr_round=None):
         raise Exception('Not implemented')
