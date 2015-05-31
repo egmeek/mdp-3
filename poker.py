@@ -153,7 +153,7 @@ class Game(object):
                 self.table.state = 4
             self.manage_winnings()
             self.table.next_dealer()
-            self.deck = Deck()
+            self.table.deck = Deck()
 
     def manage_bets(self):
         '''
@@ -274,7 +274,7 @@ def main():
     p4 = DeterministicPlayer(name='D', bankroll=10**6)
     table = Table([p1, p2, p3, p4], deck=deck, bigblind=100)
     g = Game(table)
-    g.play(rounds=3)
+    g.play(rounds=30)
 
 
 if __name__ == "__main__":
