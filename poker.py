@@ -34,21 +34,11 @@ class Table(object):
     def __init__(self, players, deck=None, bigblind=None):
         self.deck = deck if deck is not None else Deck()
         self.bigblind = bigblind if bigblind is not None else self.default_bb
-        self.state = 0
-        self.dealer = None
         self.players = players
-        self.current_player = None
         self.nr_players = len(players)
         self.dealer = randint(0, self.nr_players - 1)
-        self.initiator = None
-        self.bets = {}
-        self.players_fold = 0
-        self.players_allin = 0
-        self.family_cards = []
-        for state in [k for k in game_states.keys() if k != 4]:
-            self.bets[state] = {}
-            for player in self.players:
-                self.bets[state][player] = []
+        self.deck = deck if deck is not None else Deck()
+        self.reset()
 
     def action(self, code, amt=0):
         player = self.players[self.current_player]
@@ -103,7 +93,6 @@ class Table(object):
                     topay = max(summ, topay)
         topay = topay - payed
         topay = max(topay, 0)
-        log('%s, %s' % (topay, payed))
         return topay
 
     def players_active(self):
@@ -111,6 +100,22 @@ class Table(object):
 
     def players_in_hand(self):
         return self.nr_players - self.players_fold
+
+    def reset(self):
+        self.state = 0
+        self.bets = {}
+        for state in [k for k in game_states.keys() if k != 4]:
+            self.bets[state] = {}
+            for player in self.players:
+                self.bets[state][player] = []
+        for p in self.players:
+            p.state = 0
+            p.hand = None
+        self.players_fold = 0
+        self.players_allin = 0
+        self.initiator = None
+        self.current_player = None
+        self.family_cards = []
 
 
 class Game(object):
@@ -136,8 +141,9 @@ class Game(object):
 
     def play(self, rounds=1):
         nr_round = 0
-        self.table.state = 0
+        self.current_player = None
         while nr_round < rounds:
+            self.table.reset()
             self.pre_flop()
             for state in (1, 2, 3):
                 if self.table.players_in_hand() >= 2:
@@ -145,7 +151,9 @@ class Game(object):
             nr_round += 1
             if self.table.players_in_hand() >= 2:
                 self.table.state = 4
-        self.manage_winnings()
+            self.manage_winnings()
+            self.table.next_dealer()
+            self.deck = Deck()
 
     def manage_bets(self):
         '''
@@ -157,8 +165,6 @@ class Game(object):
         player = self.table.next_player()
         self.table.initiator = Player(name='None')
         first_after_bb = True
-        log('initiator: %s, player: %s' % (
-            self.table.initiator.name, player.name))
         while (self.table.initiator is not player and
                self.table.players_in_hand() >= 2):
             if player.state not in (5, 6):
@@ -170,7 +176,6 @@ class Game(object):
                 if first_after_bb:
                     first_after_bb = False
                     self.table.initiator = player
-            log('initiator: %s' % self.table.initiator.name)
             player = self.table.next_player()
 
     def manage_winnings(self):
@@ -190,6 +195,7 @@ class Game(object):
                 if player.state != 6:
                     winner = player
             winner.bankroll += winnings
+            log('WINNER: %s %s' % (winner.name, winnings))
         else:
             # A so called 'showdown'
             e = Evaluator()
@@ -206,21 +212,28 @@ class Game(object):
                     DCard.new(repr(p.hand.cards()[0])),
                     DCard.new(repr(p.hand.cards()[1])),
                 ]
-                vals[p][1] = e.evaluate(dboard, hand) if p.state != 6 else 0
+                vals[p][1] = e.evaluate(dboard, hand) if p.state != 6 else 9000
 
             to_distribute = sum([v[0] for v in vals.values()])
-            best_card_score = max([v[1] for v in vals.values()])
+            best_card_score = min([v[1] for v in vals.values()])
             winners = [
                 p
                 for p, v in vals.iteritems()
                 if v[1] == best_card_score
             ]
+            winnings = 0
             for p, v in vals.iteritems():
                 if p in winners:
                     p.bankroll += v[0]
+                    winnings += v[0]
                 else:
                     for w in winners:
                         w.bankroll += int(v[0]/len(winners))
+                        winnings += int(v[0]/len(winners))
+
+            log('WINNER(s): %s %s' %
+                (', '.join([w.name for w in winners]),
+                 int(winnings/len(winners))))
 
     def game_state(self, state):
         self.table.deck.pop_card()
@@ -241,7 +254,6 @@ class Game(object):
         # Prepare the deck
         deck = self.table.deck
         deck.shuffle()
-        log('Deck shuffled')
         log('Dealer: %s' % self.table.players[self.table.dealer].name)
         # Distribute starting hands
         for player in self.table.players:
@@ -256,13 +268,13 @@ class Game(object):
 
 def main():
     deck = Deck()
-    p1 = DeterministicPlayer(name='A', bankroll=1500)
-    p2 = DeterministicPlayer(name='B', bankroll=1500)
-    p3 = DeterministicPlayer(name='C', bankroll=1500)
-    p4 = DeterministicPlayer(name='D', bankroll=1500)
+    p1 = DeterministicPlayer(name='A', bankroll=10**6)
+    p2 = DeterministicPlayer(name='B', bankroll=10**6)
+    p3 = DeterministicPlayer(name='C', bankroll=10**6)
+    p4 = DeterministicPlayer(name='D', bankroll=10**6)
     table = Table([p1, p2, p3, p4], deck=deck, bigblind=100)
     g = Game(table)
-    g.play(rounds=1)
+    g.play(rounds=3)
 
 
 if __name__ == "__main__":
