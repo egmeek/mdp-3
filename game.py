@@ -113,3 +113,6 @@ class Player(object):
 
     def move(self, table, nr_round=None):
         raise Exception('Not implemented')
+
+    def signal_end(self, win=True, amt=0, nr_round=0):
+        pass

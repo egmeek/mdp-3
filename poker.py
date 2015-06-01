@@ -3,6 +3,7 @@ from random import randint
 from game import Card, Hand, Deck, Player, player_states
 from players import DeterministicPlayer
 from deuces.deuces import Card as DCard, Evaluator
+from qlearning import QLearning
 
 
 def log(msg):
@@ -17,22 +18,6 @@ game_states = {
     3: 'RIVER',
     4: 'SHOWDOWN',
 }
-
-
-class DeucesWrapper(object):
-    def __init__(self):
-        self.e = Evaluator()
-
-    def evaluate(board, hand):
-        dhand = []
-        dboard = []
-        for c in board:
-            dcard = DCard(repr(c))
-            dboard.append(dcard)
-        for c in hand:
-            dcard = DCard(repr(c))
-            dhand.append(dcard)
-        return self.e.evaluate(dboard, dhand)
 
 
 class Table(object):
@@ -56,30 +41,12 @@ class Table(object):
         self.deck = deck if deck is not None else Deck()
         self.reset()
 
-    def action(self, code, amt=0):
-        player = self.players[self.current_player]
-        if code is 2:
-            # Call
-            player.bankroll -= amt
-            self.bets[self.state][player].append(amt)
-        elif code in (3, 4):
-            # Bet & Raise
-            player.bankroll -= amt
-            self.bets[self.state][player].append(amt)
-            self.initiator = player
-        elif code is 5:
-            # All-in
-            player.bankroll -= amt
-            self.bets[self.state][player].append(amt)
-            self.initiator = player
-            self.players_allin += 1
-            assert player.bankroll == 0
-        elif code is 6:
-            # Fold
-            self.players_fold += 1
-        player.state = code
-
-        assert player.bankroll >= 0
+    def pot(self):
+        pot = 0
+        for state_bets in self.bets.values():
+            for bets in state_bets.values():
+                pot += sum(bets)
+        return pot
 
     def next_dealer(self):
         if self.dealer is None:
@@ -145,13 +112,13 @@ class Game(object):
 
     def small_blind(self):
         player = self.table.next_player()
-        self.table.action(3, self.table.bigblind / 2)
+        self.action(3, self.table.bigblind / 2)
         log('[%s](%s) SMALL BLIND' %
             (player.name, player.bankroll))
 
     def big_blind(self):
         player = self.table.next_player()
-        self.table.action(3, self.table.bigblind)
+        self.action(3, self.table.bigblind)
         log('[%s](%s) BIG BLIND' %
             (player.name, player.bankroll))
         self.table.initiator = player
@@ -159,17 +126,20 @@ class Game(object):
     def play(self, rounds=1):
         self.current_player = None
         while self.nr_round < rounds:
+            if self.nr_round == 50000:
+                self.table.players[1].bankroll = 10**7
             self.table.reset()
             self.pre_flop()
             for state in (1, 2, 3):
                 if self.table.players_in_hand() >= 2:
                     self.game_state(state)
-            self.nr_round += 1
             if self.table.players_in_hand() >= 2:
                 self.table.state = 4
             self.manage_winnings()
             self.table.next_dealer()
             self.table.deck = Deck()
+            self.nr_round += 1
+            new = self.table.players[1].bankroll
 
     def manage_bets(self):
         '''
@@ -185,7 +155,7 @@ class Game(object):
                self.table.players_in_hand() >= 2):
             if player.state not in (5, 6):
                 move, amt = player.move(self.table, nr_round=self.nr_round)
-                self.table.action(move, amt)
+                self.action(move, amt)
                 log('[%s](%s)(%s%s) %s %s' % (
                     player.name, player.bankroll, player.hand.card1,
                     player.hand.card2, player_states[move], amt))
@@ -211,7 +181,14 @@ class Game(object):
                 if player.state != 6:
                     winner = player
             winner.bankroll += winnings
+            winner.signal_end(win=True, amt=winnings, nr_round=self.nr_round)
             log('WINNER: %s %s' % (winner.name, winnings))
+            for p in self.table.players:
+                if p is not winner:
+                    lost_amt = 0
+                    for bets in self.table.bets.values():
+                        lost_amt += sum(bets[p])
+                    p.signal_end(win=False, amt=lost_amt, nr_round=self.nr_round)
         else:
             # A so called 'showdown'
             e = Evaluator()
@@ -246,7 +223,16 @@ class Game(object):
                     for w in winners:
                         w.bankroll += int(v[0]/len(winners))
                         winnings += int(v[0]/len(winners))
-
+            for w in winners:
+                w.signal_end(
+                    win=True, amt=int(winnings/len(winners)),
+                    nr_round=self.nr_round)
+            for p in self.table.players:
+                if p not in winners:
+                    lost_amt = 0
+                    for bets in self.table.bets.values():
+                        lost_amt += sum(bets[p])
+                    p.signal_end(win=False, amt=lost_amt, nr_round=self.nr_round)
             log('WINNER(s): %s %s' %
                 (', '.join([w.name for w in winners]),
                  int(winnings/len(winners))))
@@ -281,16 +267,55 @@ class Game(object):
         self.big_blind()
         self.manage_bets()
 
+    def action(self, code, amt=0):
+        player = self.table.players[self.table.current_player]
+        if code is 2:
+            # Call
+            player.bankroll -= amt
+            self.table.bets[self.table.state][player].append(amt)
+        elif code in (3, 4):
+            # Bet & Raise
+            player.bankroll -= amt
+            self.table.bets[self.table.state][player].append(amt)
+            self.table.initiator = player
+        elif code is 5:
+            # All-in
+            player.bankroll -= amt
+            self.table.bets[self.table.state][player].append(amt)
+            self.table.initiator = player
+            self.table.players_allin += 1
+            assert player.bankroll == 0
+        elif code is 6:
+            # Fold
+            self.table.players_fold += 1
+            lost_amt = 0
+            for bets in self.table.bets.values():
+                lost_amt += sum(bets[player])
+        player.state = code
+
+        assert player.bankroll >= 0
+
 
 def main():
+    import sys
     deck = Deck()
-    p1 = DeterministicPlayer(name='A', bankroll=10**6)
-    p2 = DeterministicPlayer(name='B', bankroll=10**6)
-    p3 = DeterministicPlayer(name='C', bankroll=10**6)
-    p4 = DeterministicPlayer(name='D', bankroll=10**6)
-    table = Table([p1, p2, p3, p4], deck=deck, bigblind=100)
+    p1 = DeterministicPlayer(name='A', bankroll=10**7)
+    p2 = QLearning(name='Q', bankroll=10**7)
+    table = Table([p1, p2], deck=deck, bigblind=10)
     g = Game(table)
-    g.play(rounds=30)
+    g.play(rounds=int(sys.argv[1]))
+    print 'alpha=', p2.alpha
+    print 'gamma=', p2.gamma
+    print 'eps=', p2.eps
+    print 'eps decay=', p2.exploration_rate
+
+    from pprint import pprint
+    print p2.bankroll, p2.eps
+    pprint(p2.Q)
+    print 
+    pprint(p2.T)
+    print 'Sanity Check: %s' % sum([p.bankroll for p in g.table.players])
+    print p2.test
 
 
 if __name__ == "__main__":
