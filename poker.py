@@ -342,6 +342,10 @@ def main():
         f.write('\n')
         f.write(str(bankroll_history))
         f.write('\n')
+        f.write('preflop ints=' + str(p2.preflop_ints))
+        f.write('\n')
+        f.write('strength ints=' + str(p2.strength_ints))
+        f.write('\n')
         f.close()
     else:
         print 'rounds=', sys.argv[1]
@@ -358,6 +362,8 @@ def main():
         for k, v in p2.test.iteritems():
             print k, sum(v.values())
         print p2.strength_intervals
+        print 'strength ints', p2.strength_ints
+        print 'preflop ints=', p2.preflop_ints
         print bankroll_history
 
 

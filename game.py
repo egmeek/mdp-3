@@ -76,7 +76,7 @@ class Hand(object):
 
     def cards(self):
         '''Returns a tuple containing the two card objects'''
-        return self.card1, self.card2
+        return [self.card1, self.card2]
 
     def __repr__(self):
         return '[%s][%s]' % (self.card1, self.card2)

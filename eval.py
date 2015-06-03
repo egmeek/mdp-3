@@ -85,7 +85,6 @@ class Eval(object):
                     itsstr = self.get_strength(hand + board)
                     outcome = self.get_winner(ourstr, itsstr)
                     if outcome == -1:
-                        print hand
                         win += 1
                     elif outcome == 1:
                         loss += 1

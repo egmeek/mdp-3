@@ -15,13 +15,20 @@ class QLearning(Player):
         'm': 1,
         'l': 2
     }
+    combinations = {
+        1: 1081.0,
+        2: 1035.0,
+        3: 990.0,
+    }
+    strength_ints = {'s': 0.33, 'm': 0.66, 'l': 1.0}
+    preflop_ints = (21, 130)
     strength_intervals = (
         ('l', 4000),
         ('m', 6000),
         ('s', 10000),
     )
     eps = 0.5                       # Exploration tendency
-    exploration_rate = 0.00001      # Exploration decay
+    exploration_rate = 0.0001       # Exploration decay
     gamma = 0.9                     # Future rewards importance
     alpha = 0.1                     # Adapting rate
 
@@ -42,25 +49,24 @@ class QLearning(Player):
         #@TODO
         self.test = {'s': {'call': 0, 'check': 0, 'bet': 0}, 'm': {'call': 0, 'check': 0, 'bet': 0}, 'l': {'call': 0, 'check': 0, 'bet': 0}}
 
-    def calculate_strength(self, board, hand):
+    def calculate_strength(self, board, hand, state):
         '''Returns s m or l'''
+        e = Eval()
         if not board:
-            e = Eval()
             s = e.get_hand_rank(hand.cards())
-            if s < 60:
+            if s < self.preflop_ints[0]:
                 return 'l'
-            elif s < 120:
+            elif s < self.preflop_ints[1]:
                 return 'm'
             else:
                 return 's'
         else:
-            dw = DeucesWrapper()
-            score = dw.evaluate(board, hand)
-            sorted_intervals = sorted(
-                self.strength_intervals, key=lambda x: x[1])
-            for label, interval in sorted_intervals:
-                if score <= interval:
-                    return label
+            probs = e.get_probs(hand.cards(), board)
+            wewin = (probs[0] + 0.5 * probs[1]) / self.combinations[state]
+            for k, p in self.strength_ints.iteritems():
+                if wewin <= p:
+                    return k
+
         raise Exception('Bad strength interval configuration!')
 
     def calculate_strength2(self, board, hand):
@@ -84,7 +90,7 @@ class QLearning(Player):
     def update_Q(self, state, strength, reward=0, qmax=None):
         '''The heart of our Q learning algorithm.'''
         #@TODO DELETE
-        if state == 1 and self.prev_state['state'] == 0:
+        if state == 1 and self.prev_state['state'] == 0 and strength == 'l':
             self.test[self.prev_state['strength']][self.prev_state['action']] += 1
         self.nr_plays += 1
         prev_state = self.prev_state['state']
@@ -161,7 +167,7 @@ class QLearning(Player):
         state = table.state
 
         # Categorize hand strength in 's', 'm', or 'l'
-        strength_label = self.calculate_strength(table.family_cards, self.hand)
+        strength_label = self.calculate_strength(table.family_cards, self.hand, state)
 
         # Decide which action to take based on the Q table and exploration rate
         action, amt = self.decide(
