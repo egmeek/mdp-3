@@ -54,6 +54,12 @@ class Card(object):
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __lt__(self, other):
+        return self.rank_num() < other.rank_num()
+
+    def __gt__(self, other):
+        return self.rank_num() > other.rank_num()
+
 
 class InvalidHand(Exception):
     pass

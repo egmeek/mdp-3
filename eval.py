@@ -1,5 +1,5 @@
 from deuces.deuces import Card as DCard, Evaluator as DEvaluator
-from game import Card, suits, ranks
+from game import Card, suits, ranks, Deck
 
 
 class DeucesWrapper(object):
@@ -73,6 +73,26 @@ class Eval(object):
     def __init__(self):
         self.relevant = []
 
+    def get_probs(self, cards, board):
+        win, eq, loss = 0, 0, 0
+        ourstr = self.get_strength(cards + board)
+        d = Deck()
+        for i in xrange(len(d.cards)):
+            for j in xrange(i + 1, len(d.cards)):
+                if (d.cards[i] not in cards + board and
+                        d.cards[j] not in cards + board):
+                    hand = [d.cards[i], d.cards[j]]
+                    itsstr = self.get_strength(hand + board)
+                    outcome = self.get_winner(ourstr, itsstr)
+                    if outcome == -1:
+                        print hand
+                        win += 1
+                    elif outcome == 1:
+                        loss += 1
+                    else:
+                        eq += 1
+        return win, eq, loss
+
     def get_hand_rank(self, cards):
         c1, c2 = cards
         if c2.rank_num() > c1.rank_num():
@@ -82,6 +102,20 @@ class Eval(object):
             suit = 'o' if c1.suit != c2.suit else 's'
         key = c1.rank + c2.rank + suit
         return hand_ranks[key]
+
+    def get_winner(self, s1, s2):
+        # -1 board1, board1 == board2, 1 board2
+        if s1[0] > s2[0]:
+            return 1
+        elif s1[0] < s2[0]:
+            return -1
+        assert len(s1[1]) == len(s2[1])
+        for i in xrange(len(s1[1])):
+            if s1[1][i] > s2[1][i]:
+                return -1
+            elif s1[1][i] < s2[1][i]:
+                return 1
+        return 0
 
     def get_strength(self, board):
         board = sorted(board, key=lambda x: x.rank_num(), reverse=True)

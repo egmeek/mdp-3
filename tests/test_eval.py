@@ -894,3 +894,55 @@ class TestEval(TestCase):
             Card('6', 'h'),
             Card('4', 's'),
         ]))
+
+    def test_get_winner(self):
+        e = Eval()
+        board1 = [
+            Card('T', 's'),
+            Card('9', 'd'),
+            Card('7', 'd'),
+            Card('6', 'h'),
+            Card('4', 's'),
+            Card('3', 'c'),
+            Card('2', 'c'),
+        ]
+        board2 = [
+            Card('Q', 's'),
+            Card('9', 'd'),
+            Card('7', 'd'),
+            Card('6', 'h'),
+            Card('4', 's'),
+            Card('3', 'c'),
+            Card('2', 'c'),
+        ]
+        self.assertEqual(
+            e.get_winner(e.get_strength(board1), e.get_strength(board2)), 1
+        )
+
+    def test_get_probs(self):
+        e = Eval()
+        hand = [Card('A', 's'), Card('K', 'c')]
+        board = [
+            Card('T', 's'),
+            Card('6', 'h'),
+            Card('4', 's'),
+            Card('3', 'c'),
+            Card('2', 'c'),
+        ]
+        self.assertEqual(
+            e.get_probs(hand, board)[0] < e.get_probs(hand, board)[2], True
+        )
+
+    def test_get_probs1(self):
+        e = Eval()
+        hand = [Card('2', 's'), Card('3', 'c')]
+        board = [
+            Card('A', 's'),
+            Card('K', 's'),
+            Card('Q', 's'),
+            Card('J', 's'),
+            Card('T', 's'),
+        ]
+        self.assertEqual(
+            e.get_probs(hand, board)[1], 990
+        )
