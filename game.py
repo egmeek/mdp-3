@@ -51,6 +51,9 @@ class Card(object):
         '''Returns a numerical representation of the Card rank'''
         return ranks_numerical[self.rank]
 
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
 
 class InvalidHand(Exception):
     pass
