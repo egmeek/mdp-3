@@ -4,11 +4,38 @@ from eval import Eval
 
 
 class TestEval(TestCase):
+    def test_check_straight_ok1(self):
+        e = Eval()
+        board = [
+            Card('A', 's'),
+            Card('K', 'c'),
+            Card('Q', 'c'),
+            Card('Q', 'd'),
+            Card('J', 'c'),
+            Card('T', 'c'),
+        ]
+        self.assertEquals(e.check_straight(board), True)
+        self.assertEquals(e.relevant[0], Card('A', 's'))
+
     def test_check_straight_ok2(self):
         e = Eval()
         board = [
             Card('A', 's'),
             Card('K', 'c'),
+            Card('Q', 'c'),
+            Card('J', 'c'),
+            Card('T', 'c'),
+        ]
+        self.assertEquals(e.check_straight(board), True)
+        self.assertEquals(e.relevant[0], Card('A', 's'))
+
+    def test_check_straight_ok3(self):
+        e = Eval()
+        board = [
+            Card('A', 's'),
+            Card('K', 'c'),
+            Card('Q', 'h'),
+            Card('Q', 's'),
             Card('Q', 'c'),
             Card('J', 'c'),
             Card('T', 'c'),
@@ -661,4 +688,173 @@ class TestEval(TestCase):
             Card('2', 's'),
         ]
         self.assertEquals(e.check_kind_2(board), False)
+        self.assertEquals(e.relevant, [])
+
+    def test_royal_ok1(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 's'),
+            Card('8', 's'),
+            Card('7', 's'),
+            Card('6', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), True)
+        board = [
+            Card('T', 's'),
+        ]
+        self.assertEquals(e.relevant, board)
+
+    def test_royal_ok2(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 's'),
+            Card('8', 's'),
+            Card('7', 'd'),
+            Card('7', 's'),
+            Card('6', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), True)
+        board = [
+            Card('T', 's'),
+        ]
+        self.assertEquals(e.relevant, board)
+
+    def test_royal_ok3(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 's'),
+            Card('8', 's'),
+            Card('7', 's'),
+            Card('6', 's'),
+            Card('5', 's'),
+            Card('4', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), True)
+        board = [
+            Card('T', 's'),
+        ]
+        self.assertEquals(e.relevant, board)
+
+    def test_royal_ok4(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 'h'),
+            Card('8', 's'),
+            Card('7', 's'),
+            Card('6', 's'),
+            Card('5', 's'),
+            Card('4', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), True)
+        board = [
+            Card('8', 's'),
+        ]
+        self.assertEquals(e.relevant, board)
+
+    def test_royal_ok5(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 's'),
+            Card('9', 'c'),
+            Card('9', 'd'),
+            Card('8', 's'),
+            Card('7', 's'),
+            Card('6', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), True)
+        board = [
+            Card('T', 's'),
+        ]
+        self.assertEquals(e.relevant, board)
+
+    def test_royal_ok6(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('T', 'h'),
+            Card('9', 'h'),
+            Card('9', 's'),
+            Card('8', 's'),
+            Card('7', 's'),
+            Card('6', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), True)
+        board = [
+            Card('T', 's'),
+        ]
+        self.assertEquals(e.relevant, board)
+
+    def test_royal_ok7(self):
+        e = Eval()
+        board = [
+            Card('T', 'h'),
+            Card('T', 's'),
+            Card('9', 'h'),
+            Card('9', 's'),
+            Card('8', 's'),
+            Card('7', 's'),
+            Card('6', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), True)
+        board = [
+            Card('T', 's'),
+        ]
+        self.assertEquals(e.relevant, board)
+
+    def test_royal_bad(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 's'),
+            Card('9', 'c'),
+            Card('9', 'd'),
+            Card('8', 'c'),
+            Card('7', 's'),
+            Card('6', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), False)
+        self.assertEquals(e.relevant, [])
+
+    def test_royal_bad2(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 's'),
+            Card('8', 's'),
+            Card('6', 's'),
+            Card('6', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), False)
+        self.assertEquals(e.relevant, [])
+
+    def test_royal_bad3(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 's'),
+            Card('8', 's'),
+            Card('7', 's'),
+            Card('6', 'h'),
+            Card('5', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), False)
+        self.assertEquals(e.relevant, [])
+
+    def test_royal_bad4(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('T', 'c'),
+            Card('9', 'd'),
+            Card('9', 'h'),
+            Card('8', 's'),
+            Card('7', 's'),
+            Card('6', 's'),
+        ]
+        self.assertEquals(e.check_royal(board), False)
         self.assertEquals(e.relevant, [])

@@ -83,16 +83,32 @@ class Eval(object):
         key = c1.rank + c2.rank + suit
         return hand_ranks[key]
 
+    def check_royal(self, cards):
+        self.relevant = []
+        hist = {}
+        for c in cards:
+            hist[c.suit] = hist.setdefault(c.suit, 0) + 1
+        if max(hist.values()) < 5:
+            return False
+        new = []
+        for c in cards:
+            if hist[c.suit] >= 5:
+                new.append(c)
+
+        return self.check_straight(new)
+
     def check_straight(self, cards):
         c = 1
         self.relevant = []
         for i in xrange(len(cards) - 1):
+            if c == 1:
+                best = cards[i]
             if cards[i].rank_num() - 1 == cards[i+1].rank_num():
                 c += 1
                 if c == 5:
-                    self.relevant.append(cards[i-3])
+                    self.relevant.append(best)
                     return True
-            else:
+            elif cards[i].rank_num() != cards[i+1].rank_num():
                 c = 1
         return False
 
