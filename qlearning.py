@@ -1,6 +1,6 @@
 from random import random, randint
 from game import Player
-from eval import DeucesWrapper
+from eval import DeucesWrapper, Eval
 
 
 class QLearning(Player):
@@ -16,13 +16,13 @@ class QLearning(Player):
         'l': 2
     }
     strength_intervals = (
-        ('l', 6000),
-        ('m', 7000),
+        ('l', 4000),
+        ('m', 6000),
         ('s', 10000),
     )
     eps = 0.5                       # Exploration tendency
-    exploration_rate = 0.0001       # Exploration decay
-    gamma = 1                       # Future rewards importance
+    exploration_rate = 0.00001      # Exploration decay
+    gamma = 0.9                     # Future rewards importance
     alpha = 0.1                     # Adapting rate
 
     def __init__(self, name=None, bankroll=None):
@@ -45,12 +45,11 @@ class QLearning(Player):
     def calculate_strength(self, board, hand):
         '''Returns s m or l'''
         if not board:
-            score = 1
-            c1, c2 = hand.cards()
-            both = c1.rank_num() + c2.rank_num()
-            if c1.rank_num() >= 10 and c2.rank_num >= 10:
+            e = Eval()
+            s = e.get_hand_rank(hand.cards())
+            if s < 60:
                 return 'l'
-            elif c1.rank_num() > 12 or c2.rank_num() > 12 or (c1.suit == c2.suit):
+            elif s < 120:
                 return 'm'
             else:
                 return 's'
@@ -63,6 +62,16 @@ class QLearning(Player):
                 if score <= interval:
                     return label
         raise Exception('Bad strength interval configuration!')
+
+    def calculate_strength2(self, board, hand):
+        '''Returns s m or l'''
+        c1, c2 = hand.cards()
+        if c1.rank_num() >= 10 and c2.rank_num() >= 10:
+            return 'l'
+        elif c1.rank_num() > 10 or c2.rank_num() > 10 or (c1.suit == c2.suit) or (c1.rank_num() > 7 and c2.rank_num() > 7):
+            return 'm'
+        else:
+            return 's'
 
     def has_previous_state(self, r):
         return self.prev_state is not None and self.prev_state['round'] == r
@@ -99,9 +108,7 @@ class QLearning(Player):
         sample = reward + qmax
         old = self.Q[prev_state][self.strength[prev_str]][prev_action]
         new = (1 - self.alpha) * old + self.alpha * sample
-        self.Q[prev_state][self.strength[prev_str]][prev_action] = new
-        (prev_state, prev_str, prev_action, old, state, strength, new)
-
+        self.Q[prev_state][self.strength[prev_str]][prev_action] = round(new, 2)
 
     def update_T(self, strength='s', action='fold', table_state=0):
         self.T[table_state][self.strength[strength]][action] += 1
