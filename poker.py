@@ -1,3 +1,4 @@
+import sys
 from os import environ
 from random import randint
 from game import Card, Hand, Deck, Player, player_states
@@ -125,9 +126,8 @@ class Game(object):
 
     def play(self, rounds=1):
         self.current_player = None
+        last = 0
         while self.nr_round < rounds:
-            if self.nr_round == 50000:
-                self.table.players[1].bankroll = 10**7
             self.table.reset()
             self.pre_flop()
             for state in (1, 2, 3):
@@ -140,6 +140,12 @@ class Game(object):
             self.table.deck = Deck()
             self.nr_round += 1
             new = self.table.players[1].bankroll
+            if self.nr_round % 1000 == 0:
+                bankroll_history.append(self.table.players[1].bankroll)
+            new = int((float(self.nr_round) / rounds) * 100)
+            if new > last:
+                last = new
+                print '(%s%%)' % new
 
     def manage_bets(self):
         '''
@@ -295,27 +301,64 @@ class Game(object):
 
         assert player.bankroll >= 0
 
+bankroll_history = []
 
 def main():
-    import sys
+    import pprint
     deck = Deck()
     p1 = DeterministicPlayer(name='A', bankroll=10**7)
     p2 = QLearning(name='Q', bankroll=10**7)
     table = Table([p1, p2], deck=deck, bigblind=10)
     g = Game(table)
     g.play(rounds=int(sys.argv[1]))
-    print 'alpha=', p2.alpha
-    print 'gamma=', p2.gamma
-    print 'eps=', p2.eps
-    print 'eps decay=', p2.exploration_rate
 
-    from pprint import pprint
-    print p2.bankroll, p2.eps
-    pprint(p2.Q)
-    print 
-    pprint(p2.T)
-    print 'Sanity Check: %s' % sum([p.bankroll for p in g.table.players])
-    print p2.test
+
+    if len(sys.argv) == 3:
+        f = open(sys.argv[2], 'w')
+        f.write('rounds=' + sys.argv[1])
+        f.write('\n')
+        f.write('alpha=' + str(p2.alpha))
+        f.write('\n')
+        f.write('gamma=' + str(p2.gamma))
+        f.write('\n')
+        f.write('eps=' + str(p2.eps))
+        f.write('\n')
+        f.write('eps decay=' + str(p2.exploration_rate))
+        f.write('\n')
+        f.write(str(p2.bankroll) + ' ' + str(p2.eps))
+        f.write('\n')
+        f.write(pprint.pformat(p2.Q))
+        f.write('\n')
+        f.write(pprint.pformat(p2.T))
+        f.write('\n')
+        f.write('Sanity Check: %s' % sum([p.bankroll for p in g.table.players]))
+        f.write('\n')
+        f.write(str(p2.test))
+        f.write('\n')
+        for k, v in p2.test.iteritems():
+            f.write(str(k) + ' ' + str(sum(v.values())))
+            f.write('\n')
+        f.write(str(p2.strength_intervals))
+        f.write('\n')
+        f.write(str(bankroll_history))
+        f.write('\n')
+        f.close()
+    else:
+        print 'rounds=', sys.argv[1]
+        print 'alpha=', p2.alpha
+        print 'gamma=', p2.gamma
+        print 'eps=', p2.eps
+        print 'eps decay=', p2.exploration_rate
+        print p2.bankroll, p2.eps
+        pprint.pprint(p2.Q)
+        print 
+        pprint.pprint(p2.T)
+        print 'Sanity Check: %s' % sum([p.bankroll for p in g.table.players])
+        print p2.test
+        for k, v in p2.test.iteritems():
+            print k, sum(v.values())
+        print p2.strength_intervals
+        print bankroll_history
 
 
 if __name__ == "__main__":
