@@ -87,7 +87,7 @@ class TestEval(TestCase):
                 board.append(Card(ranks[i+j], 'h'))
             self.assertEqual(e.check_straight(board), True)
             self.assertEqual(e.relevant[0], Card(ranks[i], 'h'))
-            
+
     def test_check_straight_many_bad(self):
         e = Eval()
         for i in xrange(len(ranks) - 4):
@@ -109,7 +109,7 @@ class TestEval(TestCase):
             board += [Card('A', 's'), Card('7', 'c')]
             self.assertEqual(e.check_straight(board), True)
             self.assertEqual(e.relevant[0], Card(ranks[i], 'h'))
-            
+
     def test_check_straight_many_bad_7(self):
         e = Eval()
         for i in xrange(len(ranks) - 4):
@@ -221,7 +221,6 @@ class TestEval(TestCase):
         ]
         self.assertEquals(e.check_flush(board), True)
         self.assertEquals(e.relevant, board[:5])
-
 
     def test_4kind_ok(self):
         e = Eval()
@@ -858,3 +857,40 @@ class TestEval(TestCase):
         ]
         self.assertEquals(e.check_royal(board), False)
         self.assertEquals(e.relevant, [])
+
+    def test_get_strength(self):
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('T', 'd'),
+            Card('9', 'd'),
+            Card('9', 'h'),
+            Card('2', 's'),
+            Card('7', 'c'),
+            Card('6', 'c'),
+        ]
+        self.assertEqual(e.get_strength(board), (7, [
+            Card('T', 's'),
+            Card('T', 'd'),
+            Card('9', 'd'),
+            Card('9', 'h'),
+            Card('7', 'c'),
+        ]))
+
+        e = Eval()
+        board = [
+            Card('T', 's'),
+            Card('9', 'd'),
+            Card('7', 'd'),
+            Card('6', 'h'),
+            Card('4', 's'),
+            Card('3', 'c'),
+            Card('2', 'c'),
+        ]
+        self.assertEqual(e.get_strength(board), (9, [
+            Card('T', 's'),
+            Card('9', 'd'),
+            Card('7', 'd'),
+            Card('6', 'h'),
+            Card('4', 's'),
+        ]))

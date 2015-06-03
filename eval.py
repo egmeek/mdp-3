@@ -83,6 +83,27 @@ class Eval(object):
         key = c1.rank + c2.rank + suit
         return hand_ranks[key]
 
+    def get_strength(self, board):
+        board = sorted(board, key=lambda x: x.rank_num(), reverse=True)
+        if self.check_royal(board):
+            return 1, self.relevant[:]
+        elif self.check_kind_4(board):
+            return 2, self.relevant[:]
+        elif self.check_full(board):
+            return 3, self.relevant[:]
+        elif self.check_flush(board):
+            return 4, self.relevant[:]
+        elif self.check_straight(board):
+            return 5, self.relevant[:]
+        elif self.check_kind_3(board):
+            return 6, self.relevant[:]
+        elif self.check_kind_2_2(board):
+            return 7, self.relevant[:]
+        elif self.check_kind_2(board):
+            return 8, self.relevant[:]
+        else:
+            return 9, board[:][:5]
+
     def check_royal(self, cards):
         self.relevant = []
         hist = {}
